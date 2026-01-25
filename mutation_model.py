@@ -1,5 +1,3 @@
-mutation = st.sidebar.text_input("Mutation (e.g. A123V)", "A50V")
-
 def parse_mutation(m):
     wt = m[0]
     pos = int(m[1:-1]) - 1
