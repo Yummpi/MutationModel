@@ -179,4 +179,4 @@ torch.save(model.state_dict(), "mutation_ai.pt")
  "label": -1.7   # ΔΔG, fitness change, pathogenicity score, etc
 }
 
-
+streamlit_app.py
