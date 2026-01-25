@@ -6,5 +6,4 @@ ipywidgets
 ipython_genutils
 torch
 esm
-mutation_model
-MutationEffectModel
+
