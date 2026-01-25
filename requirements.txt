@@ -5,3 +5,4 @@ biotite
 ipywidgets
 ipython_genutils
 torch
+esm
