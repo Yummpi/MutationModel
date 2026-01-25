@@ -59,3 +59,5 @@ predict = st.sidebar.button('Predict', on_click=update)
 
 if not predict:
     st.warning('👈 Enter protein sequence data!')
+    mutation = st.sidebar.text_input("Mutation (e.g. A123V)", "A50V")
+
