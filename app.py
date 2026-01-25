@@ -145,7 +145,6 @@ with torch.no_grad():
 st.subheader("Mutation Effect Score")
 st.metric("Predicted Impact", round(score, 4))
 
-import torch
 from torch.utils.data import DataLoader
 from mutation_model import MutationEffectModel
 from dataset import MutationDataset
