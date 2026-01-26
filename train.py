@@ -30,3 +30,5 @@ for epoch in range(30):
 
     print(f"Epoch {epoch}: loss={total/len(dl):.4f}")
     torch.save(model.state_dict(), f"models/epoch_{epoch}.pt")
+
+python train.py
