@@ -5,6 +5,17 @@ import requests
 import biotite.structure.io as bsio
 import torch
 from mutation_model import MutationEffectTransformer
+import os, torch
+
+WEIGHTS = "models/epoch_29.pt"
+
+if os.path.exists(WEIGHTS):
+    model = MutationEffectTransformer(embed_dim=1024)
+    model.load_state_dict(torch.load(WEIGHTS, map_location="cpu"))
+    model.eval()
+else:
+    model = None
+
 
 model = MutationEffectTransformer(embed_dim=1024)
 model.load_state_dict(torch.load("models/epoch_29.pt", map_location="cpu"))
@@ -66,6 +77,10 @@ predict = st.sidebar.button('Predict', on_click=update)
 if not predict:
     st.warning('👈 Enter protein sequence data!')
     mutation = st.sidebar.text_input("Mutation (e.g. A123V)", "A50V")
+
+if model is None:
+    st.error("Trained model not found. Please upload weights.")
+    st.stop()
 
 from mutation_model import MutationEffectTransformer
 
