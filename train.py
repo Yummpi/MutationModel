@@ -2,6 +2,7 @@ import torch
 from torch.utils.data import DataLoader
 from mutation_model import MutationEffectTransformer
 from dataset import MutationDataset
+import os
 
 pairs = torch.load("data/pairs.pt")
 ds = MutationDataset(pairs, window=8)
@@ -30,5 +31,3 @@ for epoch in range(30):
 
     print(f"Epoch {epoch}: loss={total/len(dl):.4f}")
     torch.save(model.state_dict(), f"models/epoch_{epoch}.pt")
-
-python train.py
