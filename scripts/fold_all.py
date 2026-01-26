@@ -1,12 +1,12 @@
 import torch
 import esm
 from pathlib import Path
-from Bio import SeqIO
 
 device = "cuda" if torch.cuda.is_available() else "cpu"
 
-model = esm.pretrained.esmfold_v1()
+model, alphabet = esm.pretrained.esm2_t33_650M_UR50D()
 model = model.eval().to(device)
+batch_converter = alphabet.get_batch_converter()
 
 seq_dir = Path("data/sequences")
 out_dir = Path("data/embeddings")
@@ -17,12 +17,13 @@ for fasta in seq_dir.glob("*.fasta"):
     with open(fasta) as f:
         seq = "".join(f.read().splitlines()[1:])
 
-    with torch.no_grad():
-        output = model.infer_pdb(seq)
+    batch = [("protein", seq)]
+    _, _, tokens = batch_converter(batch)
+    tokens = tokens.to(device)
 
-    # extract per-residue embeddings
     with torch.no_grad():
-        emb = model.embed_tokens(seq).cpu()
+        out = model(tokens, repr_layers=[33])
+        emb = out["representations"][33][0].cpu()
 
     torch.save(emb, out_dir / f"{name}.pt")
     print(f"Saved {name}.pt")
