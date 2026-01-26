@@ -61,3 +61,13 @@ if not predict:
     st.warning('👈 Enter protein sequence data!')
     mutation = st.sidebar.text_input("Mutation (e.g. A123V)", "A50V")
 
+from mutation_model import MutationEffectTransformer
+
+model = MutationEffectTransformer(embed_dim=1024)
+model.load_state_dict(torch.load("models/epoch_29.pt"))
+model.eval()
+
+box = build_mutation_box(wild_emb, mut_emb, pos)
+score = model(box.unsqueeze(0)).item()
+
+
