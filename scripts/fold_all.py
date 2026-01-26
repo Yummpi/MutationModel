@@ -1,16 +1,28 @@
-import torch, glob, os
-from app import run_esmfold   # import your existing fold function
+import torch
+import esm
+from pathlib import Path
+from Bio import SeqIO
 
-os.makedirs("data/embeddings", exist_ok=True)
+device = "cuda" if torch.cuda.is_available() else "cpu"
 
-# Fold wild-type
-wt_seq = open("data/raw/wild.fasta").read().splitlines()[1]
-torch.save(run_esmfold(wt_seq), "data/embeddings/wild.pt")
+model = esm.pretrained.esmfold_v1()
+model = model.eval().to(device)
 
-# Fold mutants
-for file in glob.glob("data/raw/seqs/*.fasta"):
-    seq = open(file).read().splitlines()[1]
-    data = run_esmfold(seq)
-    name = os.path.basename(file).replace(".fasta",".pt")
-    torch.save(data, f"data/embeddings/{name}")
-    print("Saved", name)
+seq_dir = Path("data/sequences")
+out_dir = Path("data/embeddings")
+out_dir.mkdir(parents=True, exist_ok=True)
+
+for fasta in seq_dir.glob("*.fasta"):
+    name = fasta.stem
+    with open(fasta) as f:
+        seq = "".join(f.read().splitlines()[1:])
+
+    with torch.no_grad():
+        output = model.infer_pdb(seq)
+
+    # extract per-residue embeddings
+    with torch.no_grad():
+        emb = model.embed_tokens(seq).cpu()
+
+    torch.save(emb, out_dir / f"{name}.pt")
+    print(f"Saved {name}.pt")
