@@ -14,6 +14,9 @@ out_dir.mkdir(parents=True, exist_ok=True)
 
 for fasta in seq_dir.glob("*.fasta"):
     name = fasta.stem
+        if (out_dir / f"{name}.pt").exists():
+        continue
+
     with open(fasta) as f:
         seq = "".join(f.read().splitlines()[1:])
 
@@ -21,9 +24,9 @@ for fasta in seq_dir.glob("*.fasta"):
     _, _, tokens = batch_converter(batch)
     tokens = tokens.to(device)
 
-    with torch.no_grad():
+    with torch.no_grad(), torch.cuda.amp.autocast(dtype=torch.float16):
         out = model(tokens, repr_layers=[33])
-        emb = out["representations"][33][0].cpu()
+        emb = out["representations"][33][0].float().cpu()
 
     torch.save(emb, out_dir / f"{name}.pt")
     print(f"Saved {name}.pt")
