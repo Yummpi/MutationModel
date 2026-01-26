@@ -6,13 +6,11 @@ class MutationDataset(Dataset):
         self.pairs = pairs
         self.window = window
 
-        # Cache wild once
         wild = torch.load(self.pairs[0]["wild"])
         if isinstance(wild, dict):
             wild = wild["emb"]
-        self.wild = wild  # [L, D]
+        self.wild = wild
 
-        # Cache all mutant embeddings once
         self.mut_cache = []
         for p in self.pairs:
             m = torch.load(p["mut"])
@@ -41,3 +39,4 @@ class MutationDataset(Dataset):
 
         y = torch.tensor(self.pairs[idx]["label"], dtype=torch.float32)
         return x, y
+
