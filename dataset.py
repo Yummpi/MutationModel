@@ -8,16 +8,29 @@ class MutationDataset(Dataset):
 
     def __getitem__(self, idx):
         wild = torch.load(self.pairs[idx]["wild"])
-        mut = torch.load(self.pairs[idx]["mut"])
-        pos = self.pairs[idx]["pos"]
+        mut  = torch.load(self.pairs[idx]["mut"])
+        pos  = int(self.pairs[idx]["pos"])
         label = torch.tensor(self.pairs[idx]["label"], dtype=torch.float32)
 
-        delta = mut["emb"] - wild["emb"]
+        # handle tensor vs dict
+        if isinstance(wild, dict):
+            wild = wild["emb"]
+        if isinstance(mut, dict):
+            mut = mut["emb"]
 
-        i0 = max(0, pos-self.window)
-        i1 = min(len(delta), pos+self.window+1)
+        delta = mut - wild  # [L, D]
+
+        i0 = max(0, pos - self.window)
+        i1 = min(delta.shape[0], pos + self.window + 1)
 
         x = delta[i0:i1]
+
+        # pad to fixed length (2*window + 1)
+        target_len = 2 * self.window + 1
+        if x.shape[0] < target_len:
+            pad = torch.zeros(target_len - x.shape[0], x.shape[1])
+            x = torch.cat([x, pad], dim=0)
+
         return x, label
 
     def __len__(self):
