@@ -5,7 +5,7 @@ from pathlib import Path
 with open("data/raw/wild.fasta") as f:
     wt = "".join(f.read().splitlines()[1:])
 
-df = pd.read_csv("data/raw/assay/normalized.csv")
+df = pd.read_csv("data/raw/assay/normalized.csv").sample(n=5000, random_state=0)
 
 out = Path("data/sequences")
 out.mkdir(parents=True, exist_ok=True)
