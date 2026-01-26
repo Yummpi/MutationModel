@@ -3,6 +3,12 @@ from stmol import showmol
 import py3Dmol
 import requests
 import biotite.structure.io as bsio
+import torch
+from mutation_model import MutationEffectTransformer
+
+model = MutationEffectTransformer(embed_dim=1024)
+model.load_state_dict(torch.load("models/epoch_29.pt", map_location="cpu"))
+model.eval()
 
 #st.set_page_config(layout = 'wide')
 st.sidebar.title('ESMFold')
@@ -36,7 +42,7 @@ def update(sequence=txt):
         f.write(pdb_string)
 
     struct = bsio.load_structure('predicted.pdb', extra_fields=["b_factor"])
-    b_value = round(struct.b_factor.mean(), 4)
+    b_value = None
 
     # Display protein structure
     st.subheader('Visualization of predicted protein structure')
