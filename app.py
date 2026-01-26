@@ -16,11 +16,6 @@ if os.path.exists(WEIGHTS):
 else:
     model = None
 
-
-model = MutationEffectTransformer(embed_dim=1024)
-model.load_state_dict(torch.load("models/epoch_29.pt", map_location="cpu"))
-model.eval()
-
 #st.set_page_config(layout = 'wide')
 st.sidebar.title('ESMFold')
 st.sidebar.write('[*ESMFold*](https://esmatlas.com/about) is an end-to-end single sequence protein structure predictor based on the ESM-2 language model. For more information, read the [research article](https://www.biorxiv.org/content/10.1101/2022.07.20.500902v2) and the [news article](https://www.nature.com/articles/d41586-022-03539-1) published in *Nature*.')
@@ -51,8 +46,11 @@ def update(sequence=txt):
 
     with open('predicted.pdb', 'w') as f:
         f.write(pdb_string)
-
+        
+try:
     struct = bsio.load_structure('predicted.pdb', extra_fields=["b_factor"])
+    b_value = float(struct.b_factor.mean())
+except:
     b_value = None
 
     # Display protein structure
@@ -82,13 +80,5 @@ if model is None:
     st.error("Trained model not found. Please upload weights.")
     st.stop()
 
-from mutation_model import MutationEffectTransformer
-
-model = MutationEffectTransformer(embed_dim=1024)
-model.load_state_dict(torch.load("models/epoch_29.pt"))
-model.eval()
-
-box = build_mutation_box(wild_emb, mut_emb, pos)
-score = model(box.unsqueeze(0)).item()
 
 
