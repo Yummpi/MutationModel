@@ -11,7 +11,7 @@ from dataset import MutationDataset
 def main():
     pairs = torch.load("data/pairs.pt")
     ds = MutationDataset(pairs, window=8)
-    dl = DataLoader(ds, batch_size=8, shuffle=True)
+    dl = DataLoader(ds, batch_size=8, shuffle=True, num_workers=0)
 
     embed_dim = ds[0][0].shape[-1]
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
