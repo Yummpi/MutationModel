@@ -2,7 +2,7 @@ import torch
 import esm
 from pathlib import Path
 
-device = "cuda" if torch.cuda.is_available() else "cpu"
+device = "cuda"
 
 model, alphabet = esm.pretrained.esm2_t33_650M_UR50D()
 model = model.eval().to(device)
