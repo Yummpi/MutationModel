@@ -1,20 +1,21 @@
-from Bio import SeqIO
-import csv, os
+import pandas as pd
+from pathlib import Path
 
-wt = str(next(SeqIO.parse("data/raw/wild.fasta", "fasta")).seq)
-os.makedirs("data/raw/seqs", exist_ok=True)
+# load wild sequence
+with open("data/raw/wild.fasta") as f:
+    wt = "".join(f.read().splitlines()[1:])
 
-def apply_mutation(seq, mut):
-    wt_aa = mut[0]
-    pos = int(mut[1:-1]) - 1
-    new_aa = mut[-1]
-    assert seq[pos] == wt_aa
-    return seq[:pos] + new_aa + seq[pos+1:], pos
+df = pd.read_csv("data/raw/assay/normalized.csv")
 
-with open("data/raw/GFP_dataset.csv") as f:
-    r = csv.reader(f)
-    next(r)
-    for mut, score in r:
-        new_seq, pos = apply_mutation(wt, mut)
-        with open(f"data/raw/seqs/{mut}.fasta","w") as out:
-            out.write(f">{mut}\n{new_seq}\n")
+out = Path("data/sequences")
+out.mkdir(parents=True, exist_ok=True)
+
+# save wild
+with open(out / "wild.fasta", "w") as f:
+    f.write(">wild\n" + wt + "\n")
+
+for m in df["mut"]:
+    ref, pos, alt = m[0], int(m[1:-1]) - 1, m[-1]
+    seq = wt[:pos] + alt + wt[pos+1:]
+    with open(out / f"{m}.fasta", "w") as f:
+        f.write(f">{m}\n{seq}\n")
