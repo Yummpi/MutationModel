@@ -64,7 +64,7 @@ except:
     st.subheader('plDDT')
     st.write('plDDT is a per-residue estimate of the confidence in prediction on a scale from 0-100.')
     st.info(f'plDDT: {b_value}')
-=======
+
 import os
 import urllib.request
 
