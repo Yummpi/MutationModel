@@ -1,7 +1,7 @@
 import os, hashlib
 from pathlib import Path
 import torch
-import esm
+import esm  # provided by fair-esm
 
 AA20 = set("ACDEFGHIKLMNPQRSTVWY")
 
