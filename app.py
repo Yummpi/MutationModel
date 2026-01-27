@@ -9,6 +9,8 @@ import requests
 import biotite.structure.io as bsio
 import torch
 
+pdb_string = None
+
 from mutation_model import MutationEffectTransformer
 from embedder import load_esm2, embed_sequence, get_cached_embedding, validate_sequence
 
