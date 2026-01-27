@@ -2,6 +2,10 @@ import os, hashlib
 from pathlib import Path
 import torch
 import esm  # provided by fair-esm
+if not hasattr(esm, "pretrained"):
+    raise RuntimeError(
+        "Wrong 'esm' installed. Remove pip package 'esm' and install 'fair-esm==2.0.0'."
+    )
 
 AA20 = set("ACDEFGHIKLMNPQRSTVWY")
 
