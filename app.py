@@ -23,7 +23,7 @@ if not os.path.exists(WEIGHTS):
     st.error(f"Missing weights file: {WEIGHTS}")
     st.stop()
 
-model = MutationEffectTransformer(embed_dim=1024).to(device)
+model = MutationEffectTransformer(embed_dim=1280).to(device)
 model.load_state_dict(torch.load(WEIGHTS, map_location=device))
 model.eval()
 
