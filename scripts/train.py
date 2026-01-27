@@ -1,17 +1,19 @@
-import sys, os
-sys.path.append(os.path.dirname(os.path.dirname(__file__)))
+import sys
 import os
+sys.path.append(os.path.dirname(os.path.dirname(__file__)))
 import torch
 from torch.utils.data import DataLoader
 
 from mutation_model import MutationEffectTransformer
 from dataset import MutationDataset
 
-
 def main():
     pairs = torch.load("data/pairs.pt")
     ds = MutationDataset(pairs, window=8)
     dl = DataLoader(ds, batch_size=8, shuffle=True, num_workers=0)
+    print("pairs:", len(pairs))
+    print("batches:", len(dl))
+
 
     embed_dim = ds[0][0].shape[-1]
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -25,17 +27,18 @@ def main():
     for epoch in range(30):
         total = 0.0
         for x, y in dl:
-            x, y = x.to(device), y.to(device)
+            x = x.to(device)
+            y = y.to(device).view(-1, 1)   # force [B,1]
             pred = model(x)
             loss = loss_fn(pred, y)
-
+            
             opt.zero_grad()
             loss.backward()
             opt.step()
 
             total += loss.item()
 
-        print(f"Epoch {epoch}: loss={total/len(dl):.4f}")
+        print(f"Epoch {epoch}: loss={total/len(dl):.4f}", flush=True)
         torch.save(model.state_dict(), f"models/epoch_{epoch}.pt")
 
 
