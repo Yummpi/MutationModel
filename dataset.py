@@ -10,6 +10,7 @@ def _load_pt(path: str):
         t = t["emb"]
     return t
 
+
 class MutationDataset(Dataset):
     def __init__(self, pairs, window=8):
         self.pairs = pairs
@@ -24,6 +25,9 @@ class MutationDataset(Dataset):
         return len(self.pairs)
 
     def __getitem__(self, idx):
+        if idx % 500 == 0:
+            print(f"accessed sample {idx}", flush=True)
+
         p = self.pairs[idx]
         mut = _load_pt(p["mut"])
 
@@ -43,4 +47,3 @@ class MutationDataset(Dataset):
 
         y = torch.tensor(p["label"], dtype=torch.float32)
         return x, y
-
