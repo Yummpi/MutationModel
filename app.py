@@ -15,7 +15,7 @@ from embedder import load_esm2, embed_sequence, get_cached_embedding, validate_s
 WEIGHTS = "models/epoch_14.pt"
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-model = MutationEffectTransformer(embed_dim=1024).to(device)
+model = MutationEffectTransformer(embed_dim=1280).to(device)
 model.load_state_dict(torch.load(WEIGHTS, map_location=device))
 model.eval()
 
