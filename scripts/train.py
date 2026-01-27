@@ -18,15 +18,22 @@ def main():
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
     model = MutationEffectTransformer(embed_dim).to(device)
+<<<<<<< HEAD
     ckpt = "models/epoch_1.pt"
     if os.path.exists(ckpt):
         model.load_state_dict(torch.load(ckpt, map_location=device))
+=======
+>>>>>>> 3f1ab4f384448123aef716d220f4467bf4a6f775
     opt = torch.optim.AdamW(model.parameters(), lr=3e-4)
     loss_fn = torch.nn.MSELoss()
 
     os.makedirs("models", exist_ok=True)
 
+<<<<<<< HEAD
     for epoch in range(2, 30):
+=======
+    for epoch in range(30):
+>>>>>>> 3f1ab4f384448123aef716d220f4467bf4a6f775
         total = 0.0
         for x, y in dl:
             x = x.to(device)
