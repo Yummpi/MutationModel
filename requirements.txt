@@ -6,4 +6,5 @@ ipywidgets
 ipython_genutils
 torch
 esm
-
+requests
+fair-esm
