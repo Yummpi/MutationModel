@@ -1,0 +1,9 @@
+streamlit
+stmol==0.0.9
+py3Dmol
+biotite
+ipywidgets
+ipython_genutils
+torch
+esm
+
