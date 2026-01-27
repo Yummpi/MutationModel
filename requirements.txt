@@ -1,3 +1,5 @@
+fair-esm==2.0.0
+esm>=3.2.0
 streamlit
 stmol==0.0.9
 py3Dmol
@@ -6,5 +8,3 @@ ipywidgets
 ipython_genutils
 torch
 requests
-fair-esm==2.0.0
-esm==0.0.0
