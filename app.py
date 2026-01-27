@@ -80,7 +80,6 @@ for e in EPOCHS:
     path = f"models/epoch_{e}.pt"
     if not os.path.exists(path):
         urllib.request.urlretrieve(URL, WEIGHTS)
-    return True
 
 ensure_weight()
     
