@@ -10,21 +10,23 @@ from dataset import MutationDataset
 def main():
     pairs = torch.load("data/pairs.pt")
     ds = MutationDataset(pairs, window=8)
-    dl = DataLoader(ds, batch_size=8, shuffle=True, num_workers=0)
+    dl = DataLoader(ds, batch_size=14, shuffle=True, num_workers=0)
     print("pairs:", len(pairs))
     print("batches:", len(dl))
-
 
     embed_dim = ds[0][0].shape[-1]
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
     model = MutationEffectTransformer(embed_dim).to(device)
+    ckpt = "models/epoch_1.pt"
+    if os.path.exists(ckpt):
+        model.load_state_dict(torch.load(ckpt, map_location=device))
     opt = torch.optim.AdamW(model.parameters(), lr=3e-4)
     loss_fn = torch.nn.MSELoss()
 
     os.makedirs("models", exist_ok=True)
 
-    for epoch in range(30):
+    for epoch in range(2, 30):
         total = 0.0
         for x, y in dl:
             x = x.to(device)
