@@ -18,9 +18,6 @@ def main():
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
     model = MutationEffectTransformer(embed_dim).to(device)
-    ckpt = "models/epoch_1.pt"
-    if os.path.exists(ckpt):
-        model.load_state_dict(torch.load(ckpt, map_location=device))
     opt = torch.optim.AdamW(model.parameters(), lr=3e-4)
     loss_fn = torch.nn.MSELoss()
 
