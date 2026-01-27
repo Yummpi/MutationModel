@@ -11,18 +11,14 @@ import torch
 from mutation_model import MutationEffectTransformer
 from embedder import load_esm2, embed_sequence, get_cached_embedding, validate_sequence
 
-
 # -----------------------
 # Config
 # -----------------------
-WEIGHTS = "models/epoch_14.pt"     # stored in repo via Git LFS
-WINDOW = 8                        # must match training window
-EMBED_DIM = 1280                  # must match embeddings used during training
+WEIGHTS = "models/epoch_14.pt"   # keep only epoch_14 in repo
+EMBED_DIM = 1280                # matches your checkpoint (256 x 1280 input_proj)
+WINDOW = 8
+CACHE_DIR = "data/cache"
 
-
-# -----------------------
-# Device
-# -----------------------
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 
@@ -51,7 +47,7 @@ esm2_model, batch_converter = get_esm2(device_str)
 
 
 # -----------------------
-# Helpers
+# UI helpers
 # -----------------------
 def render_mol(pdb: str):
     pdbview = py3Dmol.view()
@@ -63,7 +59,6 @@ def render_mol(pdb: str):
     pdbview.spin(True)
     showmol(pdbview, height=500, width=800)
 
-
 def fold_sequence(sequence: str) -> str:
     headers = {"Content-Type": "application/x-www-form-urlencoded"}
     r = requests.post(
@@ -74,10 +69,7 @@ def fold_sequence(sequence: str) -> str:
     )
     r.raise_for_status()
     pdb_string = r.content.decode("utf-8")
-    with open("predicted.pdb", "w", encoding="utf-8") as f:
-        f.write(pdb_string)
     return pdb_string
-
 
 def apply_mutation(seq: str, mut: str):
     m = mut.strip().upper()
@@ -94,7 +86,7 @@ def apply_mutation(seq: str, mut: str):
 
 
 # -----------------------
-# UI: sequence input + fold
+# Sidebar: input
 # -----------------------
 st.sidebar.title("ESMFold + Mutation Scoring")
 
@@ -104,26 +96,38 @@ DEFAULT_SEQ = (
 txt = st.sidebar.text_area("Input sequence", DEFAULT_SEQ, height=275)
 
 predict_btn = st.sidebar.button("Predict structure")
+st.sidebar.markdown("---")
+mutation = st.sidebar.text_input("Mutation (e.g. A123V)", "A50V")
+score_btn = st.sidebar.button("Score mutation")
+
+
+# -----------------------
+# Main: folding + display
+# -----------------------
 pdb_string = None
+seq = validate_sequence(txt)
 
 if predict_btn:
-    seq_for_fold = validate_sequence(txt)
-    if seq_for_fold is None:
+    if seq is None:
         st.error("Sequence must be amino-acid letters only (ACDEFGHIKLMNPQRSTVWY).")
         st.stop()
-    pdb_string = fold_sequence(seq_for_fold)
 
-if pdb_string is not None:
+    pdb_string = fold_sequence(seq)
+
     st.subheader("Visualization of predicted protein structure")
     render_mol(pdb_string)
 
     try:
+        # parse directly from the string; no need to write predicted.pdb
+        with open("predicted.pdb", "w", encoding="utf-8") as f:
+            f.write(pdb_string)
         struct = bsio.load_structure("predicted.pdb", extra_fields=["b_factor"])
         b_value = float(struct.b_factor.mean())
     except Exception:
         b_value = None
 
     st.subheader("plDDT")
+    st.write("plDDT is an estimate of prediction confidence from 0–100.")
     st.info(f"plDDT: {b_value if b_value is not None else 'unavailable'}")
 
     st.download_button(
@@ -133,18 +137,13 @@ if pdb_string is not None:
         mime="text/plain",
     )
 else:
-    st.info("Enter a sequence and click Predict structure.")
+    st.info("Enter a sequence, then click Predict structure.")
 
 
 # -----------------------
-# UI: mutation scoring
+# Main: mutation scoring
 # -----------------------
-st.sidebar.markdown("---")
-mutation = st.sidebar.text_input("Mutation (e.g. A123V)", "A50V")
-score_btn = st.sidebar.button("Score mutation")
-
 if score_btn:
-    seq = validate_sequence(txt)
     if seq is None:
         st.error("Sequence must be amino-acid letters only (ACDEFGHIKLMNPQRSTVWY).")
         st.stop()
@@ -154,10 +153,10 @@ if score_btn:
         st.error("Invalid mutation for this sequence (format/position/wild-type mismatch).")
         st.stop()
 
-    os.makedirs("data/cache", exist_ok=True)
+    os.makedirs(CACHE_DIR, exist_ok=True)
 
-    wild_cache = get_cached_embedding(seq, cache_dir="data/cache")
-    mut_cache = get_cached_embedding(mut_seq, cache_dir="data/cache")
+    wild_cache = get_cached_embedding(seq, cache_dir=CACHE_DIR)
+    mut_cache = get_cached_embedding(mut_seq, cache_dir=CACHE_DIR)
 
     if os.path.exists(wild_cache):
         wild_emb = torch.load(wild_cache, map_location="cpu")
@@ -171,14 +170,13 @@ if score_btn:
         mut_emb = embed_sequence(mut_seq, esm2_model, batch_converter, device)
         torch.save(mut_emb, mut_cache)
 
-    # If embed_sequence returns token embeddings including special tokens, drop them.
-    # If it already returns residue-only embeddings, this slice is harmless as long as
-    # embed_sequence includes [CLS]/[EOS]. If it does NOT, remove these two lines.
-    wild_emb = wild_emb[1:-1]
-    mut_emb = mut_emb[1:-1]
+    # Drop special tokens if present: [CLS] ... [EOS]
+    if wild_emb.shape[0] == mut_emb.shape[0] and wild_emb.shape[0] > len(seq):
+        wild_emb = wild_emb[1:-1]
+        mut_emb = mut_emb[1:-1]
 
-    pos0 = int(mutation[1:-1]) - 1
-    delta = mut_emb - wild_emb
+    pos0 = int(mutation[1:-1]) - 1  # 0-based
+    delta = mut_emb - wild_emb      # [L, D]
 
     i0 = max(0, pos0 - WINDOW)
     i1 = min(delta.shape[0], pos0 + WINDOW + 1)
@@ -194,6 +192,7 @@ if score_btn:
 
     st.subheader("Mutation effect prediction")
     st.metric("Predicted effect score", f"{score:.4f}")
+    st.caption(f"Cached embeddings: {os.path.basename(wild_cache)}, {os.path.basename(mut_cache)}")
 
 
 
