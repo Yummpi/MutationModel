@@ -8,14 +8,12 @@ from mutation_model import MutationEffectTransformer
 <<<<<<< HEAD
 import os, torch
 
-WEIGHTS = "models/epoch_29.pt"
+WEIGHTS = "models/epoch_14.pt"
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-if os.path.exists(WEIGHTS):
-    model = MutationEffectTransformer(embed_dim=1024)
-    model.load_state_dict(torch.load(WEIGHTS, map_location="cpu"))
-    model.eval()
-else:
-    model = None
+model = MutationEffectTransformer(embed_dim=1024).to(device)
+model.load_state_dict(torch.load(WEIGHTS, map_location=device))
+model.eval()
 
 #st.set_page_config(layout = 'wide')
 st.sidebar.title('ESMFold')
