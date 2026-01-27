@@ -6,16 +6,32 @@ import biotite.structure.io as bsio
 import torch
 from mutation_model import MutationEffectTransformer
 import os
+import urllib.request
 
-WEIGHTS = "models/epoch_18.pt"  # set to the checkpoint you want
+EPOCHS = list(range(30))
+USE_EPOCH = 14
+
+# Example: direct-download base URL where epoch_0.pt ... epoch_29.pt live
+BASE_URL = "PUT_BASE_URL_HERE"
+
+os.makedirs("models", exist_ok=True)
+
+for e in EPOCHS:
+    path = f"models/epoch_{e}.pt"
+    if not os.path.exists(path):
+        urllib.request.urlretrieve(URL, WEIGHTS)
+    return True
+
+ensure_weight()
+    
+ensure_models()
+
+WEIGHTS = f"models/epoch_{USE_EPOCH}.pt"
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-
-model = None
-if os.path.exists(WEIGHTS):
-    model = MutationEffectTransformer(embed_dim=1024).to(device)
-    model.load_state_dict(torch.load(WEIGHTS, map_location=device))
-    model.eval()
+model = MutationEffectTransformer(embed_dim=1024).to(device)
+model.load_state_dict(torch.load(WEIGHTS, map_location=device))
+model.eval()
 
 # ---- ESMFold ----
 def update(sequence: str):
@@ -94,8 +110,8 @@ def aa_to_idx(a: str) -> int:
     aas = "ACDEFGHIKLMNPQRSTVWY"
     return aas.index(a)
 
-if model is None:
-    st.error("Trained model not found. Train first or set WEIGHTS to an existing file.")
+if not os.path.exists(WEIGHTS):
+    st.error(f"Missing weights: {WEIGHTS}")
     st.stop()
 
 st.subheader("Mutation effect prediction")
