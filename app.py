@@ -14,6 +14,13 @@ from mutation_model import MutationEffectTransformer
 from embedder import load_esm2, embed_sequence, get_cached_embedding, validate_sequence
 
 WEIGHTS = "models/epoch_14.pt"
+
+st.write("WEIGHTS exists:", os.path.exists(WEIGHTS))
+if os.path.exists(WEIGHTS):
+    st.write("WEIGHTS bytes:", os.path.getsize(WEIGHTS))
+    with open(WEIGHTS, "rb") as f:
+        st.write("WEIGHTS first 60 bytes:", f.read(60))
+
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 model = MutationEffectTransformer(embed_dim=1280).to(device)
