@@ -80,23 +80,7 @@ st.info(f'plDDT: {b_value}')
 import os
 import urllib.request
 
-EPOCHS = list(range(30))
-USE_EPOCH = 14
-
-# Example: direct-download base URL where epoch_0.pt ... epoch_29.pt live
-BASE_URL = "PUT_BASE_URL_HERE"
-
 os.makedirs("models", exist_ok=True)
-
-for e in EPOCHS:
-    path = f"models/epoch_{e}.pt"
-    if not os.path.exists(path):
-        urllib.request.urlretrieve(URL, WEIGHTS)
-
-ensure_weight()
-ensure_models()
-
-WEIGHTS = f"models/epoch_{USE_EPOCH}.pt"
 
 # -----------------------
 # Load trained mutation model (epoch 14 stored in repo)
