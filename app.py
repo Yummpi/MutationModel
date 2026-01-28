@@ -54,18 +54,21 @@ DEFAULT_SEQ = (
 txt = st.sidebar.text_area('Input sequence', DEFAULT_SEQ, height=275)
 
 # ESMfold
-def update(sequence=txt):
-    headers = {'Content-Type': 'application/x-www-form-urlencoded'}
-    response = requests.post(
-        'https://api.esmatlas.com/foldSequence/v1/pdb/',
+def update(sequence: str):
+    headers = {"Content-Type": "application/x-www-form-urlencoded"}
+    r = requests.post(
+        "https://api.esmatlas.com/foldSequence/v1/pdb/",
         headers=headers,
-        data=sequence
+        data=sequence,
+        timeout=120,
     )
-    name = sequence[:3] + sequence[-3:]
-    pdb_string = response.content.decode('utf-8')
+    r.raise_for_status()
+    pdb_string = r.content.decode("utf-8")
 
-    with open('predicted.pdb', 'w') as f:
+    with open("predicted.pdb", "w", encoding="utf-8") as f:
         f.write(pdb_string)
+
+    return pdb_string
 
 try:
     struct = bsio.load_structure('predicted.pdb', extra_fields=["b_factor"])
