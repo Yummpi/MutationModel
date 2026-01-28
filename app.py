@@ -12,6 +12,14 @@ from embedder import load_esm2, embed_sequence, get_cached_embedding, validate_s
 from weights import ensure_weights
 
 from pathlib import Path
+import traceback
+
+st.set_page_config(page_title="MutationModel", layout="wide")
+
+def crashbox(e: Exception):
+    st.error(str(e))
+    st.code(traceback.format_exc())
+    raise e
 
 st.sidebar.write("WEIGHTS_URL set:", bool(os.getenv("WEIGHTS_URL")))
 p = Path("models/epoch_14.pt")
@@ -29,6 +37,11 @@ def load_model():
     model.load_state_dict(state, strict=True)
     model.eval()
     return model
+
+try:
+    model = load_model()
+except Exception as e:
+    crashbox(e)
 
 model = load_model()
 
