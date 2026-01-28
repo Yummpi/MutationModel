@@ -11,6 +11,14 @@ from mutation_model import MutationEffectTransformer
 from embedder import load_esm2, embed_sequence, get_cached_embedding, validate_sequence
 from weights import ensure_weights
 
+from pathlib import Path
+
+st.sidebar.write("WEIGHTS_URL set:", bool(os.getenv("WEIGHTS_URL")))
+p = Path("models/epoch_14.pt")
+st.sidebar.write("weights exists:", p.exists())
+if p.exists():
+    st.sidebar.write("weights bytes:", p.stat().st_size)
+
 EMBED_DIM = 1280
 
 @st.cache_resource(show_spinner=False)
