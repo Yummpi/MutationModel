@@ -1,6 +1,5 @@
 import os
 import re
-import urllib.request
 import streamlit as st
 from stmol import showmol
 import py3Dmol
@@ -8,96 +7,29 @@ import requests
 import biotite.structure.io as bsio
 import torch
 
-pdb_string = None
-
 from mutation_model import MutationEffectTransformer
 from embedder import load_esm2, embed_sequence, get_cached_embedding, validate_sequence
 
+# -----------------------
+# Config
+# -----------------------
 WEIGHTS = "models/epoch_14.pt"
-
-st.write("WEIGHTS exists:", os.path.exists(WEIGHTS))
-if os.path.exists(WEIGHTS):
-    st.write("WEIGHTS bytes:", os.path.getsize(WEIGHTS))
-    with open(WEIGHTS, "rb") as f:
-        st.write("WEIGHTS first 60 bytes:", f.read(60))
-
-device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-
-model = MutationEffectTransformer(embed_dim=1280).to(device)
-model.load_state_dict(torch.load(WEIGHTS, map_location=device))
-model.eval()
-
-#st.set_page_config(layout = 'wide')
-st.sidebar.title('ESMFold')
-st.sidebar.write(
-    '[*ESMFold*](https://esmatlas.com/about) is an end-to-end single sequence protein '
-    'structure predictor based on the ESM-2 language model. For more information, '
-    'read the [research article](https://www.biorxiv.org/content/10.1101/2022.07.20.500902v2) '
-    'and the [news article](https://www.nature.com/articles/d41586-022-03539-1) published in *Nature*.'
-)
-
-# stmol
-def render_mol(pdb):
-    pdbview = py3Dmol.view()
-    pdbview.addModel(pdb, 'pdb')
-    pdbview.setStyle({'cartoon': {'color': 'spectrum'}})
-    pdbview.setBackgroundColor('white')
-    pdbview.zoomTo()
-    pdbview.zoom(2, 800)
-    pdbview.spin(True)
-    showmol(pdbview, height=500, width=800)
-
-# Protein sequence input
 DEFAULT_SEQ = (
     "MGSSHHHHHHSSGLVPRGSHMRGPNPTAASLEASAGPFTVRSFTVSRPSGYGAGTVYYPTNAGGTVGAIAIVPGYTARQSSIKWWGPRLASHGFVVITIDTNSTLDQPSSRSSQQMAALRQVASLNGTSSSPIYGKVDTARMGVMGWSMGGGGSLISAANNPSLKAAAPQAPWDSSTNFSSVTVPTLIFACENDSIAPVNSSALPIYDSMSRNAKQFLEINGGSHSCANSGNSNQALIGKKGVAWMKRFMDNDTRYSTFACENPNSTRVSDFRTANCSLEDPAANKARKEAELAAATAEQ"
 )
-txt = st.sidebar.text_area('Input sequence', DEFAULT_SEQ, height=275)
 
-# ESMfold
-def update(sequence: str):
-    headers = {"Content-Type": "application/x-www-form-urlencoded"}
-    r = requests.post(
-        "https://api.esmatlas.com/foldSequence/v1/pdb/",
-        headers=headers,
-        data=sequence,
-        timeout=120,
-    )
-    r.raise_for_status()
-    pdb_string = r.content.decode("utf-8")
-
-    with open("predicted.pdb", "w", encoding="utf-8") as f:
-        f.write(pdb_string)
-
-    return pdb_string
-
-try:
-    struct = bsio.load_structure('predicted.pdb', extra_fields=["b_factor"])
-    b_value = float(struct.b_factor.mean())
-except:
-    b_value = None
-
-# Display protein structure
-st.subheader('Visualization of predicted protein structure')
-render_mol(pdb_string)
-
-# plDDT value is stored in the B-factor field
-st.subheader('plDDT')
-st.write(
-    'plDDT is a per-residue estimate of the confidence in prediction on a scale from 0-100.'
-)
-st.info(f'plDDT: {b_value}')
-
-import os
-import urllib.request
-
-os.makedirs("models", exist_ok=True)
-
-# -----------------------
-# Load trained mutation model (epoch 14 stored in repo)
-# -----------------------
-WEIGHTS = "models/epoch_14.pt"
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
+# -----------------------
+# Debug: weights exist + size
+# -----------------------
+st.write("WEIGHTS exists:", os.path.exists(WEIGHTS))
+if os.path.exists(WEIGHTS):
+    st.write("WEIGHTS bytes:", os.path.getsize(WEIGHTS))
+
+# -----------------------
+# Load trained mutation model
+# -----------------------
 if not os.path.exists(WEIGHTS):
     st.error(f"Missing weights file: {WEIGHTS}")
     st.stop()
@@ -107,7 +39,7 @@ model.load_state_dict(torch.load(WEIGHTS, map_location=device))
 model.eval()
 
 # -----------------------
-# Cache ESM2 for embeddings (used for on-the-fly scoring)
+# ESM2 cache (for embeddings used in mutation scoring)
 # -----------------------
 @st.cache_resource
 def get_esm2(device_str: str):
@@ -118,14 +50,8 @@ device_str = "cuda" if torch.cuda.is_available() else "cpu"
 esm2_model, batch_converter = get_esm2(device_str)
 
 # -----------------------
-# UI: ESMFold
+# Helpers
 # -----------------------
-st.sidebar.title("ESMFold")
-st.sidebar.write(
-    "[*ESMFold*](https://esmatlas.com/about) folds a protein sequence into a 3D structure "
-    "using the ESM Atlas API."
-)
-
 def render_mol(pdb: str):
     pdbview = py3Dmol.view()
     pdbview.addModel(pdb, "pdb")
@@ -150,11 +76,36 @@ def fold_sequence(sequence: str) -> str:
         f.write(pdb_string)
     return pdb_string
 
+def apply_mutation(seq: str, mut: str):
+    m = mut.strip().upper()
+    if not re.match(r"^[A-Z]\d+[A-Z]$", m):
+        return None
+    wt = m[0]
+    pos = int(m[1:-1])  # 1-based
+    aa2 = m[-1]
+    if pos < 1 or pos > len(seq):
+        return None
+    if seq[pos - 1] != wt:
+        return None
+    return seq[:pos - 1] + aa2 + seq[pos:]
+
+# -----------------------
+# Sidebar UI
+# -----------------------
+st.sidebar.title("ESMFold")
+st.sidebar.write(
+    "[*ESMFold*](https://esmatlas.com/about) folds a protein sequence into a 3D structure "
+    "using the ESM Atlas API."
+)
+
 txt = st.sidebar.text_area("Input sequence", DEFAULT_SEQ, height=275)
 
 predict_btn = st.sidebar.button("Predict structure")
 pdb_string = None
 
+# -----------------------
+# Step 3: predict -> store pdb_string
+# -----------------------
 if predict_btn:
     seq_for_fold = validate_sequence(txt)
     if seq_for_fold is None:
@@ -162,6 +113,9 @@ if predict_btn:
         st.stop()
     pdb_string = fold_sequence(seq_for_fold)
 
+# -----------------------
+# Step 4: render only if pdb_string exists
+# -----------------------
 if pdb_string is not None:
     st.subheader("Visualization of predicted protein structure")
     render_mol(pdb_string)
@@ -186,24 +140,11 @@ else:
     st.info("Enter protein sequence data and press Predict structure.")
 
 # -----------------------
-# Mutation scoring (on-the-fly embeddings + caching)
+# Mutation scoring
 # -----------------------
 st.sidebar.markdown("---")
 mutation = st.sidebar.text_input("Mutation (e.g. A123V)", "A50V")
 score_btn = st.sidebar.button("Score mutation")
-
-def apply_mutation(seq: str, mut: str):
-    m = mut.strip().upper()
-    if not re.match(r"^[A-Z]\d+[A-Z]$", m):
-        return None
-    wt = m[0]
-    pos = int(m[1:-1])  # 1-based
-    aa2 = m[-1]
-    if pos < 1 or pos > len(seq):
-        return None
-    if seq[pos - 1] != wt:
-        return None
-    return seq[:pos - 1] + aa2 + seq[pos:]
 
 if score_btn:
     seq = validate_sequence(txt)
@@ -216,11 +157,11 @@ if score_btn:
         st.error("Invalid mutation for this sequence (format/position/wild-type mismatch).")
         st.stop()
 
-    # Cache paths (one file per sequence)
+    os.makedirs("data/cache", exist_ok=True)
+
     wild_cache = get_cached_embedding(seq, cache_dir="data/cache")
     mut_cache = get_cached_embedding(mut_seq, cache_dir="data/cache")
 
-    # Load or compute embeddings
     if os.path.exists(wild_cache):
         wild_emb = torch.load(wild_cache, map_location="cpu")
     else:
@@ -233,11 +174,11 @@ if score_btn:
         mut_emb = embed_sequence(mut_seq, esm2_model, batch_converter, device)
         torch.save(mut_emb, mut_cache)
 
-    # ESM2 embeddings include special tokens -> drop [CLS]/[EOS]
-    wild_emb = wild_emb[1:-1]  # [L, D]
-    mut_emb = mut_emb[1:-1]    # [L, D]
+    # drop [CLS]/[EOS]
+    wild_emb = wild_emb[1:-1]
+    mut_emb = mut_emb[1:-1]
 
-    pos0 = int(mutation[1:-1]) - 1  # 0-based index
+    pos0 = int(mutation[1:-1]) - 1
     delta = mut_emb - wild_emb
 
     w = 8
