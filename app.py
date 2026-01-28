@@ -9,6 +9,20 @@ import torch
 
 from mutation_model import MutationEffectTransformer
 from embedder import load_esm2, embed_sequence, get_cached_embedding, validate_sequence
+from weights import ensure_weights
+
+EMBED_DIM = 1280
+
+@st.cache_resource(show_spinner=False)
+def load_model():
+    ckpt = ensure_weights()
+    model = MutationEffectTransformer(embed_dim=EMBED_DIM)
+    state = torch.load(ckpt, map_location="cpu")
+    model.load_state_dict(state, strict=True)
+    model.eval()
+    return model
+
+model = load_model()
 
 # -----------------------
 # Config
