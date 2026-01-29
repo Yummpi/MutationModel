@@ -7,3 +7,4 @@ ipywidgets
 ipython_genutils
 torch==2.5.1
 requests
+sympy==1.13.1
