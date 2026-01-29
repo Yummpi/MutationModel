@@ -59,8 +59,9 @@ def get_esm2(device_str: str):
     dev = torch.device(device_str)
     return load_esm2(dev)
 
-device_str = "cuda" if torch.cuda.is_available() else "cpu"
-esm2_model, batch_converter = get_esm2(device_str)
+if score_btn:
+    device_str = "cuda" if torch.cuda.is_available() else "cpu"
+    esm2_model, batch_converter = get_esm2(device_str)
 
 # -----------------------
 # Helpers
