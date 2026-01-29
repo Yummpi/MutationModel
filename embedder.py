@@ -24,7 +24,7 @@ def embed_sequence(seq: str, model, batch_converter, device) -> torch.Tensor:
     batch = [("protein", seq)]
     _, _, tokens = batch_converter(batch)
     tokens = tokens.to(device)
-    out = model(tokens, repr_layers=[33])
+    out = esm2_model(tokens, repr_layers=[33], return_contacts=False)
     emb = out["representations"][33][0].detach().cpu()   # [L+2, D]
     return emb
 
