@@ -31,6 +31,10 @@ EMBED_DIM = 1280
 
 device = torch.device("cpu")
 
+@st.cache_resource(show_spinner=True)
+def load_esm2_cached():
+    return load_esm2(device)
+
 esm2_model, batch_converter = load_esm2_cached()
 
 @st.cache_resource(show_spinner=False)
@@ -54,14 +58,6 @@ except Exception as e:
 DEFAULT_SEQ = (
     "MGSSHHHHHHSSGLVPRGSHMRGPNPTAASLEASAGPFTVRSFTVSRPSGYGAGTVYYPTNAGGTVGAIAIVPGYTARQSSIKWWGPRLASHGFVVITIDTNSTLDQPSSRSSQQMAALRQVASLNGTSSSPIYGKVDTARMGVMGWSMGGGGSLISAANNPSLKAAAPQAPWDSSTNFSSVTVPTLIFACENDSIAPVNSSALPIYDSMSRNAKQFLEINGGSHSCANSGNSNQALIGKKGVAWMKRFMDNDTRYSTFACENPNSTRVSDFRTANCSLEDPAANKARKEAELAAATAEQ"
 )
-
-# -----------------------
-# ESM2 cache (for embeddings used in mutation scoring)
-# -----------------------
-@st.cache_resource
-def get_esm2(device_str: str):
-    dev = torch.device(device_str)
-    return load_esm2(dev)
 
 # -----------------------
 # Helpers
