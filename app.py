@@ -31,10 +31,6 @@ EMBED_DIM = 1280
 
 device = torch.device("cpu")
 
-@st.cache_resource(show_spinner=True)
-def load_esm2_cached():
-    return load_esm2(device)
-
 esm2_model, batch_converter = load_esm2_cached()
 
 @st.cache_resource(show_spinner=False)
@@ -96,7 +92,7 @@ def fold_sequence(sequence: str) -> str:
 
 def apply_mutation(seq: str, mut: str):
     m = mut.strip().upper()
-    if not re.match(r"^[A-Z]\d+[A-Z]$", m):
+   if not re.fullmatch(r"[ACDEFGHIKLMNPQRSTVWY]\d+[ACDEFGHIKLMNPQRSTVWY]", m):
         return None
     wt = m[0]
     pos = int(m[1:-1])  # 1-based
