@@ -20,13 +20,14 @@ def load_esm2(device):
     return model, bc
 
 @torch.inference_mode()
-def embed_sequence(seq: str, model, batch_converter, device) -> torch.Tensor:
-    batch = [("protein", seq)]
-    _, _, tokens = batch_converter(batch)
+def embed_sequence(sequence: str, model, batch_converter, device):
+    data = [("seq", sequence)]
+    _, _, tokens = batch_converter(data)
     tokens = tokens.to(device)
-    out = esm2_model(tokens, repr_layers=[33], return_contacts=False)
-    emb = out["representations"][33][0].detach().cpu()   # [L+2, D]
-    return emb
+
+    out = model(tokens, repr_layers=[33], return_contacts=False)
+    reps = out["representations"][33][0].detach().cpu()  # (L+2, 1280)
+    return reps
 
 def get_cached_embedding(seq: str, cache_dir="data/cache") -> str:
     Path(cache_dir).mkdir(parents=True, exist_ok=True)
