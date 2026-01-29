@@ -204,6 +204,7 @@ if score_btn:
         pad = torch.zeros(target_len - x.shape[0], x.shape[1], dtype=x.dtype)
         x = torch.cat([x, pad], dim=0)
 
+    x = x.float().to(device)
     with torch.no_grad():
         score = model(x.unsqueeze(0).to(device)).item()
 
