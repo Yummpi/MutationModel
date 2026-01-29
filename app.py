@@ -14,6 +14,12 @@ from weights import ensure_weights
 from pathlib import Path
 import traceback
 
+@st.cache_resource(show_spinner=True)
+def load_esm2_cached():
+    return load_esm2(device)
+
+esm2_model, batch_converter = load_esm2_cached()
+
 st.set_page_config(page_title="MutationModel", layout="wide")
 
 def crashbox(e: Exception):
@@ -160,9 +166,6 @@ score_btn = st.sidebar.button("Score mutation")
 
 if score_btn:
     try:
-        device_str = "cpu"
-        esm2_model, batch_converter = get_esm2(device_str)
-
         seq = validate_sequence(txt)
         if seq is None:
             st.error("Sequence must be amino-acid letters only (ACDEFGHIKLMNPQRSTVWY).")
