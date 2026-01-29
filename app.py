@@ -29,6 +29,8 @@ if p.exists():
 
 EMBED_DIM = 1280
 
+device = torch.device("cpu")
+
 @st.cache_resource(show_spinner=False)
 def load_model():
     ckpt = ensure_weights()
@@ -157,58 +159,62 @@ mutation = st.sidebar.text_input("Mutation (e.g. A123V)", "A50V")
 score_btn = st.sidebar.button("Score mutation")
 
 if score_btn:
-    device_str = "cuda" if torch.cuda.is_available() else "cpu"
-    esm2_model, batch_converter = get_esm2(device_str)
-    seq = validate_sequence(txt)
-    if seq is None:
-        st.error("Sequence must be amino-acid letters only (ACDEFGHIKLMNPQRSTVWY).")
-        st.stop()
+    try:
+        device_str = "cpu"
+        esm2_model, batch_converter = get_esm2(device_str)
 
-    mut_seq = apply_mutation(seq, mutation)
-    if mut_seq is None:
-        st.error("Invalid mutation for this sequence (format/position/wild-type mismatch).")
-        st.stop()
+        seq = validate_sequence(txt)
+        if seq is None:
+            st.error("Sequence must be amino-acid letters only (ACDEFGHIKLMNPQRSTVWY).")
+            st.stop()
 
-    os.makedirs("data/cache", exist_ok=True)
+        mut_seq = apply_mutation(seq, mutation)
+        if mut_seq is None:
+            st.error("Invalid mutation for this sequence (format/position/wild-type mismatch).")
+            st.stop()
 
-    wild_cache = get_cached_embedding(seq, cache_dir="data/cache")
-    mut_cache = get_cached_embedding(mut_seq, cache_dir="data/cache")
+        os.makedirs("data/cache", exist_ok=True)
 
-    if os.path.exists(wild_cache):
-        wild_emb = torch.load(wild_cache, map_location="cpu")
-    else:
-        wild_emb = embed_sequence(seq, esm2_model, batch_converter, device)
-        torch.save(wild_emb, wild_cache)
+        wild_cache = get_cached_embedding(seq, cache_dir="data/cache")
+        mut_cache = get_cached_embedding(mut_seq, cache_dir="data/cache")
 
-    if os.path.exists(mut_cache):
-        mut_emb = torch.load(mut_cache, map_location="cpu")
-    else:
-        mut_emb = embed_sequence(mut_seq, esm2_model, batch_converter, device)
-        torch.save(mut_emb, mut_cache)
+        if os.path.exists(wild_cache):
+            wild_emb = torch.load(wild_cache, map_location="cpu")
+        else:
+            wild_emb = embed_sequence(seq, esm2_model, batch_converter, device)
+            wild_emb = wild_emb.cpu()
+            torch.save(wild_emb, wild_cache)
 
-    # drop [CLS]/[EOS]
-    wild_emb = wild_emb[1:-1]
-    mut_emb = mut_emb[1:-1]
+        if os.path.exists(mut_cache):
+            mut_emb = torch.load(mut_cache, map_location="cpu")
+        else:
+            mut_emb = embed_sequence(mut_seq, esm2_model, batch_converter, device)
+            mut_emb = mut_emb.cpu()
+            torch.save(mut_emb, mut_cache)
 
-    pos0 = int(mutation[1:-1]) - 1
-    delta = mut_emb - wild_emb
+        wild_emb = wild_emb[1:-1]
+        mut_emb = mut_emb[1:-1]
 
-    w = 8
-    i0 = max(0, pos0 - w)
-    i1 = min(delta.shape[0], pos0 + w + 1)
-    x = delta[i0:i1]
+        pos0 = int(mutation[1:-1]) - 1
+        delta = (mut_emb - wild_emb).float()
 
-    target_len = 2 * w + 1
-    if x.shape[0] < target_len:
-        pad = torch.zeros(target_len - x.shape[0], x.shape[1], dtype=x.dtype)
-        x = torch.cat([x, pad], dim=0)
+        w = 8
+        i0 = max(0, pos0 - w)
+        i1 = min(delta.shape[0], pos0 + w + 1)
+        x = delta[i0:i1]
 
-    x = x.float().to(device)
-    with torch.no_grad():
-        score = model(x.unsqueeze(0).to(device)).item()
+        target_len = 2 * w + 1
+        if x.shape[0] < target_len:
+            pad = torch.zeros(target_len - x.shape[0], x.shape[1], dtype=x.dtype)
+            x = torch.cat([x, pad], dim=0)
 
-    st.subheader("Mutation effect prediction")
-    st.metric("Predicted effect score", f"{score:.4f}")
-    st.caption(
-        f"Cached embeddings: {os.path.basename(wild_cache)}, {os.path.basename(mut_cache)}"
-    )
+        x = x.to(device)  # device is CPU
+        with torch.no_grad():
+            score = model(x.unsqueeze(0)).item()
+
+        st.subheader("Mutation effect prediction")
+        st.metric("Predicted effect score", f"{score:.4f}")
+        st.caption(f"Cached embeddings: {os.path.basename(wild_cache)}, {os.path.basename(mut_cache)}")
+
+    except Exception as e:
+        crashbox(e)
