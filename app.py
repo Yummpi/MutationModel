@@ -161,7 +161,7 @@ else:
 # Mutation scoring
 # -----------------------
 st.sidebar.markdown("---")
-mutation = st.sidebar.text_input("Mutation (e.g. A123V)", "A50V")
+mutation = st.sidebar.text_input("Mutation (e.g. A123V)", "G50V")
 score_btn = st.sidebar.button("Score mutation")
 
 if score_btn:
