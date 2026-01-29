@@ -51,26 +51,6 @@ DEFAULT_SEQ = (
     "MGSSHHHHHHSSGLVPRGSHMRGPNPTAASLEASAGPFTVRSFTVSRPSGYGAGTVYYPTNAGGTVGAIAIVPGYTARQSSIKWWGPRLASHGFVVITIDTNSTLDQPSSRSSQQMAALRQVASLNGTSSSPIYGKVDTARMGVMGWSMGGGGSLISAANNPSLKAAAPQAPWDSSTNFSSVTVPTLIFACENDSIAPVNSSALPIYDSMSRNAKQFLEINGGSHSCANSGNSNQALIGKKGVAWMKRFMDNDTRYSTFACENPNSTRVSDFRTANCSLEDPAANKARKEAELAAATAEQ"
 )
 
-device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-
-# -----------------------
-# Debug: weights exist + size
-# -----------------------
-st.write("WEIGHTS exists:", os.path.exists(WEIGHTS))
-if os.path.exists(WEIGHTS):
-    st.write("WEIGHTS bytes:", os.path.getsize(WEIGHTS))
-
-# -----------------------
-# Load trained mutation model
-# -----------------------
-if not os.path.exists(WEIGHTS):
-    st.error(f"Missing weights file: {WEIGHTS}")
-    st.stop()
-
-model = MutationEffectTransformer(embed_dim=1280).to(device)
-model.load_state_dict(torch.load(WEIGHTS, map_location=device))
-model.eval()
-
 # -----------------------
 # ESM2 cache (for embeddings used in mutation scoring)
 # -----------------------
