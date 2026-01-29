@@ -14,12 +14,6 @@ from weights import ensure_weights
 from pathlib import Path
 import traceback
 
-@st.cache_resource(show_spinner=True)
-def load_esm2_cached():
-    return load_esm2(device)
-
-esm2_model, batch_converter = load_esm2_cached()
-
 st.set_page_config(page_title="MutationModel", layout="wide")
 
 def crashbox(e: Exception):
@@ -36,6 +30,12 @@ if p.exists():
 EMBED_DIM = 1280
 
 device = torch.device("cpu")
+
+@st.cache_resource(show_spinner=True)
+def load_esm2_cached():
+    return load_esm2(device)
+
+esm2_model, batch_converter = load_esm2_cached()
 
 @st.cache_resource(show_spinner=False)
 def load_model():
