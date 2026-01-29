@@ -43,8 +43,6 @@ try:
 except Exception as e:
     crashbox(e)
 
-model = load_model()
-
 # -----------------------
 # Config
 # -----------------------
