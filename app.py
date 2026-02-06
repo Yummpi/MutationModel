@@ -210,5 +210,37 @@ if score_btn:
         st.metric("Predicted effect score", f"{score:.4f}")
         st.caption(f"Cached embeddings: {os.path.basename(wild_cache)}, {os.path.basename(mut_cache)}")
 
+compare_btn = st.sidebar.button("Compare WT vs Mutant structure")
+
+if compare_btn:
+    try:
+        seq = validate_sequence(txt)
+        if seq is None:
+            st.error("Sequence must be amino-acid letters only (ACDEFGHIKLMNPQRSTVWY).")
+            st.stop()
+
+        mut_seq = apply_mutation(seq, mutation)
+        if mut_seq is None:
+            st.error("Invalid mutation for this sequence (format/position/wild-type mismatch).")
+            st.stop()
+
+        st.info("Folding WT and mutant sequences (cached).")
+
+        wt_pdb = fold_sequence_cached(seq)
+        mut_pdb = fold_sequence_cached(mut_seq)
+
+        c1, c2 = st.columns(2)
+
+        with c1:
+            st.subheader("Wild type (WT)")
+            render_mol(wt_pdb)
+            st.download_button("Download WT PDB", wt_pdb, file_name="wt.pdb", mime="text/plain")
+
+        with c2:
+            st.subheader(f"Mutant ({mutation.upper()})")
+            render_mol(mut_pdb)
+            st.download_button("Download Mutant PDB", mut_pdb, file_name="mutant.pdb", mime="text/plain")
+
     except Exception as e:
         crashbox(e)
+
