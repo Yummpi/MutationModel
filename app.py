@@ -213,6 +213,18 @@ if score_btn:
     except Exception as e:
         crashbox(e)
 
+@st.cache_data(show_spinner=True)
+def fold_sequence_cached(sequence: str) -> str:
+    headers = {"Content-Type": "application/x-www-form-urlencoded"}
+    r = requests.post(
+        "https://api.esmatlas.com/foldSequence/v1/pdb/",
+        headers=headers,
+        data=sequence,
+        timeout=180,
+    )
+    r.raise_for_status()
+    return r.content.decode("utf-8")
+
 compare_btn = st.sidebar.button("Compare WT vs Mutant structure")
 
 if compare_btn:
