@@ -210,6 +210,9 @@ if score_btn:
         st.metric("Predicted effect score", f"{score:.4f}")
         st.caption(f"Cached embeddings: {os.path.basename(wild_cache)}, {os.path.basename(mut_cache)}")
 
+    except Exception as e:
+        crashbox(e)
+
 compare_btn = st.sidebar.button("Compare WT vs Mutant structure")
 
 if compare_btn:
