@@ -69,7 +69,6 @@ def render_mol(pdb: str):
     pdbview.setBackgroundColor("white")
     pdbview.zoomTo()
     pdbview.zoom(2, 800)
-    pdbview.spin(True)
     showmol(pdbview, height=500, width=800)
 
 def fold_sequence(sequence: str) -> str:
