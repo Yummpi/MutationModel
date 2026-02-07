@@ -101,7 +101,7 @@ def apply_mutation(seq: str, mut: str):
 # -----------------------
 # Sidebar UI
 # -----------------------
-st.sidebar.title("ESMFold")
+st.sidebar.title("Mutation Model")
 st.sidebar.write(
     "[*ESMFold*](https://esmatlas.com/about) folds a protein sequence into a 3D structure "
     "using the ESM Atlas API."
