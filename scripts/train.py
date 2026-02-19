@@ -30,7 +30,7 @@ def main():
     os.makedirs("models", exist_ok=True)
 
 
-    for epoch in range(2, 30):
+    for epoch in range(30):
 
     for epoch in range(30):
 
