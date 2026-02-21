@@ -32,6 +32,11 @@ EMBED_DIM = 1280
 
 device = torch.device("cpu")
 
+def cache_path_for_sequence(sequence: str, cache_dir="data/cache"):
+    os.makedirs(cache_dir, exist_ok=True)
+    h = hashlib.sha256(sequence.encode("utf-8")).hexdigest()[:16]
+    return os.path.join(cache_dir, f"{h}.pt")
+
 @st.cache_resource(show_spinner=True)
 def load_esm2_cached():
     return load_esm2(device)
@@ -169,15 +174,9 @@ if score_btn:
             st.stop()
 
         os.makedirs("data/cache", exist_ok=True)
+        wild_cache = cache_path_for_sequence(seq)
+        mut_cache = cache_path_for_sequence(mut_seq)
         
-def cache_path_for_sequence(sequence: str, cache_dir="data/cache"):
-    os.makedirs(cache_dir, exist_ok=True)
-    h = hashlib.sha256(sequence.encode("utf-8")).hexdigest()[:16]
-    return os.path.join(cache_dir, f"{h}.pt")
-
-wild_cache = cache_path_for_sequence(seq)
-mut_cache = cache_path_for_sequence(mut_seq)
-
         if os.path.exists(wild_cache):
             wild_emb = torch.load(wild_cache, map_location="cpu")
         else:
