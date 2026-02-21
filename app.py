@@ -6,6 +6,7 @@ import py3Dmol
 import requests
 import biotite.structure.io as bsio
 import torch
+import hashlib
 
 from mutation_model import MutationEffectTransformer
 from embedder import load_esm2, embed_sequence, get_cached_embedding, validate_sequence
@@ -168,9 +169,14 @@ if score_btn:
             st.stop()
 
         os.makedirs("data/cache", exist_ok=True)
+        
+def cache_path_for_sequence(sequence: str, cache_dir="data/cache"):
+    os.makedirs(cache_dir, exist_ok=True)
+    h = hashlib.sha256(sequence.encode("utf-8")).hexdigest()[:16]
+    return os.path.join(cache_dir, f"{h}.pt")
 
-        wild_cache = get_cached_embedding(seq, cache_dir="data/cache")
-        mut_cache = get_cached_embedding(mut_seq, cache_dir="data/cache")
+wild_cache = cache_path_for_sequence(seq)
+mut_cache = cache_path_for_sequence(mut_seq)
 
         if os.path.exists(wild_cache):
             wild_emb = torch.load(wild_cache, map_location="cpu")
