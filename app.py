@@ -215,8 +215,8 @@ if score_btn:
             st.write("Raw random output 2:", raw_rand2)
 
             score = raw_real.item()
-                st.subheader("Mutation effect prediction")
-                st.metric("Predicted effect score", f"{score:.4f}")
+            st.subheader("Mutation effect prediction")
+            st.metric("Predicted effect score", f"{score:.4f}")
 
     except Exception as e:
         crashbox(e)
