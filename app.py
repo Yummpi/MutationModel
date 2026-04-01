@@ -161,7 +161,7 @@ mutation = st.sidebar.text_input("Mutation (e.g. A123V)", "G50V")
 score_btn = st.sidebar.button("Score mutation")
 
 if score_btn:
-    try:        
+    try:                
         seq = validate_sequence(txt)
         if seq is None:
             st.error("Sequence must be amino-acid letters only (ACDEFGHIKLMNPQRSTVWY).")
@@ -172,40 +172,23 @@ if score_btn:
             st.error("Invalid mutation for this sequence (format/position/wild-type mismatch).")
             st.stop()
 
+        # TEMP DEBUG: bypass cache completely
+        wild_emb = embed_sequence(seq, esm2_model, batch_converter, device).cpu()
+        mut_emb = embed_sequence(mut_seq, esm2_model, batch_converter, device).cpu()
+
         st.write("WT == mutant sequence:", seq == mut_seq)
-
-        os.makedirs("data/cache", exist_ok=True)
-
-        wild_cache = get_cached_embedding(seq, cache_dir="data/cache")
-        mut_cache = get_cached_embedding(mut_seq, cache_dir="data/cache")
-
-        st.write("WT cache:", wild_cache)
-        st.write("MUT cache:", mut_cache)
-        st.write("Same cache file:", wild_cache == mut_cache)
-
-        if os.path.exists(wild_cache):
-            wild_emb = torch.load(wild_cache, map_location="cpu")
-        else:
-            wild_emb = embed_sequence(seq, esm2_model, batch_converter, device).cpu()
-            torch.save(wild_emb, wild_cache)
-
-        if os.path.exists(mut_cache):
-            mut_emb = torch.load(mut_cache, map_location="cpu")
-        else:
-            mut_emb = embed_sequence(mut_seq, esm2_model, batch_converter, device).cpu()
-            torch.save(mut_emb, mut_cache)
-
         st.write("WT emb shape:", tuple(wild_emb.shape))
         st.write("MUT emb shape:", tuple(mut_emb.shape))
 
+        # drop BOS/EOS
         wild_emb = wild_emb[1:-1]
         mut_emb = mut_emb[1:-1]
 
         pos0 = int(mutation[1:-1]) - 1
         delta = (mut_emb - wild_emb).float()
 
-        st.write("Delta abs sum:", float(delta.abs().sum()))
-        st.write("Delta abs max:", float(delta.abs().max()))
+        st.write("delta abs sum:", float(delta.abs().sum()))
+        st.write("delta abs max:", float(delta.abs().max()))
 
         w = 8
         i0 = max(0, pos0 - w)
@@ -217,9 +200,9 @@ if score_btn:
             pad = torch.zeros(target_len - x.shape[0], x.shape[1], dtype=x.dtype)
             x = torch.cat([x, pad], dim=0)
 
-        st.write("Model input shape:", tuple(x.shape))
-        st.write("Model input checksum:", float(x.sum()))
-        st.write("Model input abs checksum:", float(x.abs().sum()))
+        st.write("window:", i0, i1)
+        st.write("model input shape:", tuple(x.shape))
+        st.write("model input abs checksum:", float(x.abs().sum()))
 
         x = x.to(device)
         with torch.no_grad():
@@ -227,7 +210,6 @@ if score_btn:
 
         st.subheader("Mutation effect prediction")
         st.metric("Predicted effect score", f"{score:.4f}")
-        st.caption(f"Cached embeddings: {os.path.basename(wild_cache)}, {os.path.basename(mut_cache)}")
 
     except Exception as e:
         crashbox(e)
