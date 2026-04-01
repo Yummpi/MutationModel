@@ -206,10 +206,17 @@ if score_btn:
 
         x = x.to(device)
         with torch.no_grad():
-            score = model(x.unsqueeze(0)).item()
+            raw_real = model(x.unsqueeze(0))
+            raw_rand1 = model(torch.randn_like(x).unsqueeze(0))
+            raw_rand2 = model((torch.randn_like(x) * 5).unsqueeze(0))
 
-        st.subheader("Mutation effect prediction")
-        st.metric("Predicted effect score", f"{score:.4f}")
+            st.write("Raw real output:", raw_real)
+            st.write("Raw random output 1:", raw_rand1)
+            st.write("Raw random output 2:", raw_rand2)
+
+            score = raw_real.item()
+                st.subheader("Mutation effect prediction")
+                st.metric("Predicted effect score", f"{score:.4f}")
 
     except Exception as e:
         crashbox(e)
