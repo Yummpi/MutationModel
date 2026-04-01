@@ -93,8 +93,7 @@ def fold_sequence(sequence: str) -> str:
 
 def apply_mutation(seq: str, mut: str):
     m = mut.strip().upper()
-    if not re.fullmatch(r"[ACDEFGHIKLMNPQRSTVWY]\d+[ACDEFGHIKLMNPQRSTVWY]", m):
-        return None
+    if not re.fullmatch(r"[ACDEFGHIKLMNPQRSTVWY]\d+[ACDEFGHIKLMNPQRSTVWY]", m):        return None
     wt = m[0]
     pos = int(m[1:-1])  # 1-based
     aa2 = m[-1]
